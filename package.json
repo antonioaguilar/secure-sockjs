@@ -1,0 +1,25 @@
+{
+  "name": "secure-sockjs",
+  "version": "1.3.0",
+  "description": "Secure SockJS",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/antonioaguilar/secure-sockjs.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/antonioaguilar/secure-sockjs/issues"
+  },
+  "homepage": "https://github.com/antonioaguilar/secure-sockjs#readme",
+  "dependencies": {
+    "lodash": "^4.17.11",
+    "nuid": "^1.0.0",
+    "sockjs": "^0.3.19"
+  }
+}
