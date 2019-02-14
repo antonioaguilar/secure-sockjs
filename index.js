@@ -9,6 +9,11 @@ const host = '0.0.0.0';
 
 let server = http.createServer();
 let socket = sockjs.createServer();
+let metrics = {
+  connected: 0, disconnected: 0, authenticated: 0, rejected: 0
+};
+
+console.log = () => {};
 
 const server_info = {
   server_id: nuid,
@@ -20,11 +25,12 @@ const server_info = {
 
 const server_config = {
   auth_required: true,
-  disconnect_timeout: 2000
+  disconnect_timeout: 1000
 }
 
 let eventLoop = async (connection) => {
 
+  metrics.connected++;
   connection.auth = false;
 
   let session_info = {
@@ -40,32 +46,35 @@ let eventLoop = async (connection) => {
   let onDataEvent = (data) => {
     try {
       data = JSON.parse(data);
-
       if (server_config.auth_required) {
-
         if (data['jwt']) {
           session_info.authenticated = true;
           connection.auth = true;
+          metrics.authenticated++;
+          console.log(`Authenticated ${connection.id}`);
           connection.write(JSON.stringify(session_info, null, 0));
         }
         else if (data['token']) {
           session_info.authenticated = true;
           connection.auth = true;
+          metrics.authenticated++;
+          console.log(`Authenticated ${connection.id}`);
           connection.write(JSON.stringify(session_info, null, 0));
         }
         else {
+          metrics.rejected++;
           connection.auth = false;
+          console.log(`Authentication validation error ${connection.id}`);
         }
       }
-      // { "token": "BUYYF8RGFGB93WZC795V15" }
-      console.log(`Websocket data [${connection.id}] ` + JSON.stringify(event, null, 0));
     } catch (e) {
-      console.error(`Websocket data error [${connection.id}] ${e}`);
+      console.error(`Data format error ${connection.id} ${e}`);
     }
   };
 
   let onCloseEvent = () => {
-    console.log(`Websocket connection closed [${connection.id}]`);
+    metrics.disconnected++;
+    console.log(`Disconnected ${connection.id}`);
   };
 
   connection.on('data', onDataEvent);
@@ -75,20 +84,23 @@ let eventLoop = async (connection) => {
   let tm = setTimeout(() => {
     clearTimeout(tm);
     if (!connection.auth) {
-      console.log(`Authentication failed, disconnected [${connection.id}]`);
+      console.log(`Authentication failed, disconnected ${connection.id}`);
       connection.close();
     }
   }, server_config.disconnect_timeout);
 
-  console.log(`Websocket connection established [${connection.id}]`);
+  console.log(`Connected ${connection.id}`);
 
 };
 
 server.listen(port, host, () => {
-  console.log(`Websocket server started on ${host}:${port}`);
+  console.info(`Websocket server started on ${host}:${port}`);
 });
 
-socket.installHandlers(server, { prefix: '/events', transports: ['websocket'] });
+socket.installHandlers(server, { prefix: '/events', transports: ['websocket'], log: ()=>{} });
 
 socket.on('connection', eventLoop);
 
+setInterval( ()=> {
+  console.info('Websocket server metrics:', JSON.stringify(metrics, null, 0));
+}, 1000);
